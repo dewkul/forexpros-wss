@@ -22,10 +22,10 @@ futures-util = '0.3.8'
 
 tokio = { version = '0.3.5', features = [ 'rt', 'rt-multi-thread', 'time' ] }
 
-tungstenite = "0.11.1"
+tungstenite = "0.11.0"
 tokio-tungstenite = { version = "0.12.0", features = [ "tls" ] }
 
-rand = '0.7.3'
+rand = '0.8.5'
 
 #[dev-dependencies]
 regex = '1.4.2'
