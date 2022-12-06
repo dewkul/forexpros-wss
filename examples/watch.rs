@@ -53,12 +53,8 @@
 use forexpros_wss::push;
 
 fn main() {
-    // let pair_id = "945629"; // BTC/USD
-
-    //let pair_id = "8984";	// HK50 future
-
     // let pair_id = "147";  USD/THB
-    let pair_id = "3"; // USD/JPY
+    let pairs = vec![String::from("4"), String::from("3")]; // USD/JPY
 
     let handler = |s| {
         println!("INFO: {:?}", s);
@@ -66,10 +62,10 @@ fn main() {
         Ok(())
     };
 
-    let stream = push::Stream::new(pair_id.to_string(), handler).expect("Failed to create stream");
+    let stream = push::Stream::new(pairs, handler).expect("Failed to create stream");
 
-    println!("main: stream.pair_id={}", stream.pair_id);
-    println!("main: stream.handler={:?}", stream.stream_handle_spawn);
+    // println!("main: stream.pair_id={}", stream.pairs);
+    // println!("main: stream.handler={:?}", stream.stream_handle_spawn);
 
     tokio::runtime::Runtime::new()
         .unwrap()

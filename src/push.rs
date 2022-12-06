@@ -55,7 +55,7 @@ use crate::data::Snapshot;
 pub struct Stream {
     pub stream_handle_spawn: JoinHandle<Result<(), ()>>,
     pub runtime: runtime::Runtime,
-    pub pair_id: Box<str>,
+    pub pairs: Box<[String]>,
 }
 
 impl Stream {
@@ -70,17 +70,35 @@ impl Stream {
     /// 	"8830"	Gold Futures
     ///
     /// For further pair id, hack the websocket in some browser debugger, such as Chrome inspect.
-    pub fn new<'a, F>(pair_id: String, handler: F) -> Result<Self, ()>
+    pub fn new<'a, F>(pairs: Vec<String>, handler: F) -> Result<Self, ()>
     where
         F: Fn(Snapshot) -> Result<(), ()> + Send + Sync + 'static,
     {
-        let pair_id_str = pair_id.clone().into_boxed_str();
+        let pairs_id_box = pairs.clone().into_boxed_slice();
 
         // https://stackoverflow.com/questions/61752896/how-to-create-a-dedicated-threadpool-for-cpu-intensive-work-in-tokio
         let rt_main = runtime::Runtime::new().unwrap();
         let rt_heartbeat = rt_main.handle().clone();
 
-        let sub_msg = format ! ( "[\"{{\\\"_event\\\":\\\"bulk-subscribe\\\",\\\"tzID\\\":\\\"8\\\",\\\"message\\\":\\\"pid-{}:\\\"}}\"]", &pair_id ).into ( );
+        // let pairs = vec!["4", "3"];
+        let mut pairs_str = String::new();
+
+        for (i, e) in pairs.iter().enumerate() {
+            if i == 0 {
+                pairs_str.push_str("pid-");
+                pairs_str.push_str(&pairs[0]);
+            } else {
+                pairs_str.push_str("%%pid-");
+                pairs_str.push_str(e);
+            }
+            pairs_str.push(':');
+        }
+
+        println!("PAIRS = {}", pairs_str);
+
+        let sub_msg = format ! ( "[\"{{\\\"_event\\\":\\\"bulk-subscribe\\\",\\\"tzID\\\":\\\"8\\\",\\\"message\\\":\\\"{}\\\"}}\"]", &pairs_str ).into ( );
+
+        println!("SUB MSG = {}", sub_msg);
 
         let stream = Stream {
             stream_handle_spawn: rt_main.spawn(async {
@@ -117,17 +135,19 @@ impl Stream {
 							}
 						} );
 
-                        let key = format!("pid-{}::{{", pair_id);
-                        let key = key.as_str();
-
                         while let Some(msg) = rx.next().await {
                             let msg = msg.unwrap();
                             let msg = msg.to_text().unwrap();
-                            if msg.contains(key) {
-                                let stop = handler(Snapshot::from_str(msg));
+                            for p in &pairs {
+                                let key = format!("pid-{}::{{", p);
+                                let key = key.as_str();
 
-                                if let Err(_) = stop {
-                                    return Ok(());
+                                if msg.contains(key) {
+                                    let stop = handler(Snapshot::from_str(msg));
+
+                                    if let Err(_) = stop {
+                                        return Ok(());
+                                    }
                                 }
                             }
                         }
@@ -163,7 +183,7 @@ impl Stream {
                     .await
             }),
             runtime: rt_main, // keep this runtime in the same or outer scope of the spawn
-            pair_id: pair_id_str,
+            pairs: pairs_id_box,
         };
 
         Ok(stream)
@@ -216,8 +236,8 @@ mod tests {
     pub fn test_new() {
         use std::sync::{Arc, Mutex};
 
-        let pair_id = "945629"; // BTC/USD
-                                //let pair_id = "8984";	// HK50 future
+        let pair_id = vec![String::from("945629")]; // BTC/USD
+                                                    //let pair_id = "8984";	// HK50 future
 
         let found_info = Arc::new(Mutex::new(false));
         let found_info_clone = found_info.clone();
@@ -231,7 +251,7 @@ mod tests {
             Err(())
         };
 
-        let stream = Stream::new(pair_id.to_string(), handler).expect("Failed to create stream");
+        let stream = Stream::new(pair_id, handler).expect("Failed to create stream");
 
         println!("stream.spawn_handler: {:?}", stream.stream_handle_spawn);
         tokio::runtime::Runtime::new()
