@@ -80,7 +80,6 @@ impl Stream {
         let rt_main = runtime::Runtime::new().unwrap();
         let rt_heartbeat = rt_main.handle().clone();
 
-        // let pairs = vec!["4", "3"];
         let mut pairs_str = String::new();
 
         for (i, e) in pairs.iter().enumerate() {
@@ -94,11 +93,7 @@ impl Stream {
             pairs_str.push(':');
         }
 
-        println!("PAIRS = {}", pairs_str);
-
         let sub_msg = format ! ( "[\"{{\\\"_event\\\":\\\"bulk-subscribe\\\",\\\"tzID\\\":\\\"8\\\",\\\"message\\\":\\\"{}\\\"}}\"]", &pairs_str ).into ( );
-
-        println!("SUB MSG = {}", sub_msg);
 
         let stream = Stream {
             stream_handle_spawn: rt_main.spawn(async {
