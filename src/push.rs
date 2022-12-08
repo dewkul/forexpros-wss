@@ -70,9 +70,9 @@ impl Stream {
     /// 	"8830"	Gold Futures
     ///
     /// For further pair id, hack the websocket in some browser debugger, such as Chrome inspect.
-    pub fn new<'a, FnOnce>(pairs: Vec<String>, handler: FnOnce) -> Result<Self, ()>
+    pub fn new<'a, F>(pairs: Vec<String>, handler: F) -> Result<Self, ()>
     where
-        FnOnce: Fn(Snapshot) -> Result<(), ()> + Send + Sync + 'static,
+        F: Fn(Snapshot) -> Result<(), ()> + Send + Sync + 'static,
     {
         let pairs_id_box = pairs.clone().into_boxed_slice();
 
