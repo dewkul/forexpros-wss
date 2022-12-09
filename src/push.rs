@@ -50,6 +50,8 @@ use futures_util::{sink::SinkExt, stream::StreamExt};
 
 use crate::data::Snapshot;
 
+use log::{debug, warn};
+
 /// Stream to the server, keep returning the Snapshot from wss server
 /// to Fn given in Stream::new(..)
 pub struct Stream {
@@ -74,6 +76,8 @@ impl Stream {
     where
         F: Fn(Snapshot) -> Result<(), ()> + Send + Sync + 'static,
     {
+        env_logger::init();
+
         let pairs_id_box = pairs.clone().into_boxed_slice();
 
         // https://stackoverflow.com/questions/61752896/how-to-create-a-dedicated-threadpool-for-cpu-intensive-work-in-tokio
@@ -168,11 +172,11 @@ impl Stream {
                         .await;
                         */
 
-                        println!("EOD");
+                        debug!("EOD");
                         Ok(())
                     })
                     .or_else(|e| async move {
-                        println!("Failed: {:?}", e);
+                        warn!("Failed: {:?}", e);
                         Err(e)
                     })
                     .await
