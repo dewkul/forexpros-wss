@@ -76,8 +76,6 @@ impl Stream {
     where
         F: Fn(Snapshot) -> Result<(), ()> + Send + Sync + 'static,
     {
-        env_logger::init();
-
         let pairs_id_box = pairs.clone().into_boxed_slice();
 
         // https://stackoverflow.com/questions/61752896/how-to-create-a-dedicated-threadpool-for-cpu-intensive-work-in-tokio
